@@ -43,7 +43,7 @@ public class Tarifas implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Column(name = "valor")
-    private double valor;
+    private int valor;
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 45)
@@ -59,7 +59,7 @@ public class Tarifas implements Serializable {
         this.id = id;
     }
 
-    public Tarifas(Integer id, double valor, String descripcion) {
+    public Tarifas(Integer id, int valor, String descripcion) {
         this.id = id;
         this.valor = valor;
         this.descripcion = descripcion;
@@ -73,11 +73,11 @@ public class Tarifas implements Serializable {
         this.id = id;
     }
 
-    public double getValor() {
+    public int getValor() {
         return valor;
     }
 
-    public void setValor(double valor) {
+    public void setValor(int valor) {
         this.valor = valor;
     }
 

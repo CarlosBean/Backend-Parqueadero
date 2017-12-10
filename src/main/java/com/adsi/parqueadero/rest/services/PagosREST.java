@@ -35,7 +35,7 @@ import javax.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class PagosREST {
-    
+
     @EJB
     private CarrosFacade carroEJB;
 
@@ -47,24 +47,30 @@ public class PagosREST {
 
     @EJB
     private PagosFacade pagoEJB;
-    
+
     @GET
     public List<Pagos> findAll() {
         return pagoEJB.findAll();
     }
-    
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("totalIngresos")
-    public double consultarTotalIngresos(){
-        double total = 0;
+    public Response consultarTotalIngresos() {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        Gson gson = gsonBuilder.create();
+        int total = 0;
         List<Pagos> pagos = pagoEJB.findAll();
         for (Pagos pago : pagos) {
-             total = total + pago.getTotalPrecio();
+            total = total + pago.getTotalPrecio();
         }
-        return total;
+
+        Pagos pago = new Pagos(total);
+        return Response.status(Response.Status.OK)
+                .entity(gson.toJson(pago))
+                .build();
     }
-    
+
     @POST
     public Response createPago(@QueryParam("placa") String placa) {
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -78,22 +84,22 @@ public class PagosREST {
             Carros carro = carroEJB.findCarrosByPlaca(placa);
             Puestos puesto = puestoEJB.findPuestoByIdCarro(carro.getId());
             if (puestoEJB.findPuestoByIdCarro(carro.getId()) != null) {
-                    
-                    pago.setIdTarifas(tarifa);
-                    pago.setHoraActual(date);
-                    pago.setTotalPrecio(calcularTotal(carro.getHoraLlegada(), pago.getIdTarifas().getValor()));
-                    pago.setIdCarros(carro);
-                    pagoEJB.create(pago);
-                    
-                    puesto.setIdCarros(null);
-                    puestoEJB.edit(puesto);
 
-                    carro.setHoraSalida(date);
-                    carroEJB.edit(carro);
+                pago.setIdTarifas(tarifa);
+                pago.setHoraActual(date);
+                pago.setTotalPrecio(calcularTotal(carro.getHoraLlegada(), pago.getIdTarifas().getValor()));
+                pago.setIdCarros(carro);
+                pagoEJB.create(pago);
 
-                    return Response.status(Response.Status.OK)
-                            .entity(gson.toJson("Carro removido exitosamente." + " Valor a pagar: " + pago.getTotalPrecio()))
-                            .build();
+                puesto.setIdCarros(null);
+                puestoEJB.edit(puesto);
+
+                carro.setHoraSalida(date);
+                carroEJB.edit(carro);
+
+                return Response.status(Response.Status.OK)
+                        .entity(gson.toJson("Carro removido exitosamente." + " Valor a pagar: " + pago.getTotalPrecio()))
+                        .build();
             } else {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(gson.toJson("El auto no esta estacionado en ningun puesto."))
@@ -106,21 +112,39 @@ public class PagosREST {
         }
     }
 
-    public double calcularTotal(Date horaLlegada, double valorTarifa) {
+    public int calcularTotal(Date horaLlegada, int valorTarifa) {
         Date date = new Date();
         long minutosLlegada = (horaLlegada.getTime() / 1000) / 60;
         long minutosActual = (date.getTime() / 1000) / 60;
-        double totalPrecio = (minutosActual - minutosLlegada) * (valorTarifa / 60);
+        int totalPrecio = (int) ((minutosActual - minutosLlegada) * (valorTarifa / 60));
         return totalPrecio;
     }
-    
+
     @GET
     @Path("consultarPrecio")
-    @Produces(MediaType.TEXT_PLAIN)
-    public double consultarTotal(@QueryParam("placa") String placa){
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response consultarPrecio(@QueryParam("placa") String placa) {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        Gson gson = gsonBuilder.create();
         Tarifas tarifa = tarifaEJB.find(1);
-        Carros carro = carroEJB.findCarrosByPlaca(placa);
-        double total = calcularTotal(carro.getHoraLlegada(), tarifa.getValor());
-        return total;
+        if (carroEJB.findCarrosByPlaca(placa) != null) {
+            Carros carro = carroEJB.findCarrosByPlaca(placa);
+            if (puestoEJB.findPuestoByIdCarro(carro.getId()) != null) {
+                int total = calcularTotal(carro.getHoraLlegada(), tarifa.getValor());
+                Carros obj = new Carros(total);
+                return Response.status(Response.Status.OK)
+                        .entity(gson.toJson(obj))
+                        .build();
+            }else{
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(gson.toJson("El vehiculo no se le ha asignado un puesto."))
+                        .build();
+            }
+        } else {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(gson.toJson("El vehiculo no esta registrado en el parqueadero."))
+                    .build();
+        }
+
     }
 }

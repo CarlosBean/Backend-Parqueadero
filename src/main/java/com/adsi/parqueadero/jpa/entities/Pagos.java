@@ -48,7 +48,7 @@ public class Pagos implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Column(name = "total_precio")
-    private double totalPrecio;
+    private int totalPrecio;
     @JoinColumn(name = "id_carros", referencedColumnName = "id")
     @ManyToOne(optional = false)
     private Carros idCarros;
@@ -63,7 +63,7 @@ public class Pagos implements Serializable {
         this.id = id;
     }
 
-    public Pagos(Integer id, Date horaActual, double totalPrecio) {
+    public Pagos(Integer id, Date horaActual, int totalPrecio) {
         this.id = id;
         this.horaActual = horaActual;
         this.totalPrecio = totalPrecio;
@@ -85,11 +85,11 @@ public class Pagos implements Serializable {
         this.horaActual = horaActual;
     }
 
-    public double getTotalPrecio() {
+    public int getTotalPrecio() {
         return totalPrecio;
     }
 
-    public void setTotalPrecio(double totalPrecio) {
+    public void setTotalPrecio(int totalPrecio) {
         this.totalPrecio = totalPrecio;
     }
 

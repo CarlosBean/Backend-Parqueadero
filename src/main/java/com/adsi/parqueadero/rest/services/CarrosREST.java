@@ -7,14 +7,10 @@ package com.adsi.parqueadero.rest.services;
 
 import com.adsi.parqueadero.jpa.entities.Carros;
 import com.adsi.parqueadero.jpa.entities.Horarios;
-import com.adsi.parqueadero.jpa.entities.Pagos;
 import com.adsi.parqueadero.jpa.entities.Puestos;
-import com.adsi.parqueadero.jpa.entities.Tarifas;
 import com.adsi.parqueadero.jpa.sessions.CarrosFacade;
 import com.adsi.parqueadero.jpa.sessions.HorariosFacade;
-import com.adsi.parqueadero.jpa.sessions.PagosFacade;
 import com.adsi.parqueadero.jpa.sessions.PuestosFacade;
-import com.adsi.parqueadero.jpa.sessions.TarifasFacade;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.Calendar;
@@ -22,7 +18,6 @@ import java.util.Date;
 import java.util.List;
 import javax.ejb.EJB;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -45,17 +40,11 @@ public class CarrosREST {
     private CarrosFacade carroEJB;
 
     @EJB
-    private TarifasFacade tarifaEJB;
-
-    @EJB
     private PuestosFacade puestoEJB;
 
     @EJB
-    private PagosFacade pagoEJB;
-    
-    @EJB
     private HorariosFacade horarioEJB;
-    
+
     @GET
     public List<Carros> findAll() {
         return carroEJB.findAll();
@@ -83,14 +72,14 @@ public class CarrosREST {
         Horarios horario = horarioEJB.find(1);
         Date date = new Date();
         Calendar calendar = Calendar.getInstance();
-        Carros carro = new Carros();
 
         try {
             if (calendar.get(Calendar.HOUR_OF_DAY) >= horario.getHoraApertura()
                     && calendar.get(Calendar.HOUR_OF_DAY) <= horario.getHoraCierre()) {
-                if (carroEJB.findCarrosByPlaca(placa) == null) {
-                    if (puestoEJB.consultarPuestoDisp() != null) {
-                        Puestos puesto = puestoEJB.consultarPuestoDisp();
+                if (puestoEJB.consultarPuestoDisp() != null) {
+                    Puestos puesto = puestoEJB.consultarPuestoDisp();
+                    if (carroEJB.findCarrosByPlaca(placa) == null) {
+                        Carros carro = new Carros();
                         carro.setPlaca(placa);
                         carro.setHoraLlegada(date);
                         carroEJB.create(carro);
@@ -102,21 +91,34 @@ public class CarrosREST {
                                 .entity(gson.toJson("Carro ingresado exitosamente."))
                                 .build();
                     } else {
-                        return Response.status(Response.Status.BAD_REQUEST)
-                                .entity(gson.toJson("No hay puestos disponibles"))
-                                .build();
+                        Carros carro = carroEJB.findCarrosByPlaca(placa);
+                        if (puestoEJB.findPuestoByIdCarro(carro.getId()) == null) {
+                            carro.setHoraLlegada(date);
+                            carro.setHoraSalida(null);
+                            carroEJB.edit(carro);
+
+                            puesto.setIdCarros(carro);
+                            puestoEJB.edit(puesto);
+
+                            return Response.status(Response.Status.OK)
+                                    .entity(gson.toJson("Carro ingresado exitosamente."))
+                                    .build();
+                        } else {
+                            return Response.status(Response.Status.BAD_REQUEST)
+                                    .entity(gson.toJson("El carro ya se encuentra estacionado en un puesto."))
+                                    .build();
+                        }
                     }
                 } else {
                     return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(gson.toJson("El numero de placa ya se encuentra registrado."))
+                            .entity(gson.toJson("No hay puestos disponibles."))
                             .build();
                 }
             } else {
                 return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(gson.toJson("El parqueadero se encuentra cerrado." + " "+ calendar.get(Calendar.HOUR_OF_DAY) + " " + horario.getHoraApertura()))
+                        .entity(gson.toJson("El parqueadero se encuentra cerrado." + " " + calendar.get(Calendar.HOUR_OF_DAY) + " " + horario.getHoraApertura()))
                         .build();
             }
-
         } catch (Exception e) {
             System.out.println("Err" + e);
             return Response.status(Response.Status.BAD_REQUEST)
