@@ -63,7 +63,10 @@ public class CarrosREST {
             @QueryParam("Placa") String placa) {
         return carroEJB.findCarrosByPlaca(placa);
     }
-
+    
+    /*
+       Este metodo permite registrar un carro y asignarle un puesto, hace su respetivas verificaciones con condicionales. 
+    */
     @POST
     public Response createCarro(@QueryParam("placa") String placa) {
         GsonBuilder gsonBuilder = new GsonBuilder();

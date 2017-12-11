@@ -52,7 +52,12 @@ public class PagosREST {
     public List<Pagos> findAll() {
         return pagoEJB.findAll();
     }
-
+    
+    /*
+    
+    
+    */
+    
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("totalIngresos")
@@ -70,7 +75,12 @@ public class PagosREST {
                 .entity(gson.toJson(pago))
                 .build();
     }
-
+    
+    /*
+    Este metodo permite retirar un carro de un puesto y crear el pago correspondiente al tiempo que permanecio 
+    el automovil en el parqueadero.
+    */
+    
     @POST
     public Response createPago(@QueryParam("placa") String placa) {
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -119,7 +129,9 @@ public class PagosREST {
         int totalPrecio = (int) ((minutosActual - minutosLlegada) * (valorTarifa / 60));
         return totalPrecio;
     }
-
+    
+    /*
+    */
     @GET
     @Path("consultarPrecio")
     @Produces(MediaType.APPLICATION_JSON)
